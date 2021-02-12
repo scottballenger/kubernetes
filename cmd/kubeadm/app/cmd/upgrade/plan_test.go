@@ -27,35 +27,42 @@ import (
 
 func TestSortedSliceFromStringIntMap(t *testing.T) {
 	var tests = []struct {
+		name          string
 		strMap        map[string]uint16
 		expectedSlice []string
-	}{ // The returned slice should be alphabetically sorted based on the string keys in the map
+	}{
 		{
+			name:          "the returned slice should be alphabetically sorted based on the string keys in the map",
 			strMap:        map[string]uint16{"foo": 1, "bar": 2},
 			expectedSlice: []string{"bar", "foo"},
 		},
-		{ // The int value should not affect this func
+		{
+			name:          "the int value should not affect this func",
 			strMap:        map[string]uint16{"foo": 2, "bar": 1},
 			expectedSlice: []string{"bar", "foo"},
 		},
 		{
+			name:          "slice with 4 keys and different values",
 			strMap:        map[string]uint16{"b": 2, "a": 1, "cb": 0, "ca": 1000},
 			expectedSlice: []string{"a", "b", "ca", "cb"},
 		},
-		{ // This should work for version numbers as well; and the lowest version should come first
+		{
+			name:          "this should work for version numbers as well; and the lowest version should come first",
 			strMap:        map[string]uint16{"v1.7.0": 1, "v1.6.1": 1, "v1.6.2": 1, "v1.8.0": 1, "v1.8.0-alpha.1": 1},
 			expectedSlice: []string{"v1.6.1", "v1.6.2", "v1.7.0", "v1.8.0", "v1.8.0-alpha.1"},
 		},
 	}
 	for _, rt := range tests {
-		actualSlice := sortedSliceFromStringIntMap(rt.strMap)
-		if !reflect.DeepEqual(actualSlice, rt.expectedSlice) {
-			t.Errorf(
-				"failed SortedSliceFromStringIntMap:\n\texpected: %v\n\t  actual: %v",
-				rt.expectedSlice,
-				actualSlice,
-			)
-		}
+		t.Run(rt.name, func(t *testing.T) {
+			actualSlice := sortedSliceFromStringIntMap(rt.strMap)
+			if !reflect.DeepEqual(actualSlice, rt.expectedSlice) {
+				t.Errorf(
+					"failed SortedSliceFromStringIntMap:\n\texpected: %v\n\t  actual: %v",
+					rt.expectedSlice,
+					actualSlice,
+				)
+			}
+		})
 	}
 }
 
@@ -68,19 +75,6 @@ func TestPrintAvailableUpgrades(t *testing.T) {
 		expectedBytes []byte
 		externalEtcd  bool
 	}{
-		{
-			name:     "Up to date",
-			upgrades: []upgrade.Upgrade{},
-			expectedBytes: []byte(`Awesome, you're up-to-date! Enjoy!
-`),
-		},
-		{
-			name:         "Up to date external etcd",
-			externalEtcd: true,
-			upgrades:     []upgrade.Upgrade{},
-			expectedBytes: []byte(`Awesome, you're up-to-date! Enjoy!
-`),
-		},
 		{
 			name: "Patch version available",
 			upgrades: []upgrade.Upgrade{
@@ -106,18 +100,18 @@ func TestPrintAvailableUpgrades(t *testing.T) {
 				},
 			},
 			expectedBytes: []byte(`Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT      AVAILABLE
-Kubelet     1 x v1.8.1   v1.8.3
+COMPONENT   CURRENT      TARGET
+kubelet     1 x v1.8.1   v1.8.3
 
 Upgrade to the latest version in the v1.8 series:
 
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.8.1    v1.8.3
-Controller Manager   v1.8.1    v1.8.3
-Scheduler            v1.8.1    v1.8.3
-Kube Proxy           v1.8.1    v1.8.3
-Kube DNS             1.14.5    1.14.5
-Etcd                 3.0.17    3.0.17
+COMPONENT                 CURRENT   TARGET
+kube-apiserver            v1.8.1    v1.8.3
+kube-controller-manager   v1.8.1    v1.8.3
+kube-scheduler            v1.8.1    v1.8.3
+kube-proxy                v1.8.1    v1.8.3
+kube-dns                  1.14.5    1.14.5
+etcd                      3.0.17    3.0.17
 
 You can now apply the upgrade by executing the following command:
 
@@ -154,18 +148,18 @@ _____________________________________________________________________
 				},
 			},
 			expectedBytes: []byte(`Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT      AVAILABLE
-Kubelet     1 x v1.8.3   v1.9.0
+COMPONENT   CURRENT      TARGET
+kubelet     1 x v1.8.3   v1.9.0
 
 Upgrade to the latest stable version:
 
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.8.3    v1.9.0
-Controller Manager   v1.8.3    v1.9.0
-Scheduler            v1.8.3    v1.9.0
-Kube Proxy           v1.8.3    v1.9.0
-Kube DNS             1.14.5    1.14.13
-Etcd                 3.0.17    3.1.12
+COMPONENT                 CURRENT   TARGET
+kube-apiserver            v1.8.3    v1.9.0
+kube-controller-manager   v1.8.3    v1.9.0
+kube-scheduler            v1.8.3    v1.9.0
+kube-proxy                v1.8.3    v1.9.0
+kube-dns                  1.14.5    1.14.13
+etcd                      3.0.17    3.1.12
 
 You can now apply the upgrade by executing the following command:
 
@@ -220,18 +214,18 @@ _____________________________________________________________________
 				},
 			},
 			expectedBytes: []byte(`Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT      AVAILABLE
-Kubelet     1 x v1.8.3   v1.8.5
+COMPONENT   CURRENT      TARGET
+kubelet     1 x v1.8.3   v1.8.5
 
 Upgrade to the latest version in the v1.8 series:
 
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.8.3    v1.8.5
-Controller Manager   v1.8.3    v1.8.5
-Scheduler            v1.8.3    v1.8.5
-Kube Proxy           v1.8.3    v1.8.5
-Kube DNS             1.14.5    1.14.5
-Etcd                 3.0.17    3.0.17
+COMPONENT                 CURRENT   TARGET
+kube-apiserver            v1.8.3    v1.8.5
+kube-controller-manager   v1.8.3    v1.8.5
+kube-scheduler            v1.8.3    v1.8.5
+kube-proxy                v1.8.3    v1.8.5
+kube-dns                  1.14.5    1.14.5
+etcd                      3.0.17    3.0.17
 
 You can now apply the upgrade by executing the following command:
 
@@ -240,18 +234,18 @@ You can now apply the upgrade by executing the following command:
 _____________________________________________________________________
 
 Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT      AVAILABLE
-Kubelet     1 x v1.8.3   v1.9.0
+COMPONENT   CURRENT      TARGET
+kubelet     1 x v1.8.3   v1.9.0
 
 Upgrade to the latest stable version:
 
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.8.3    v1.9.0
-Controller Manager   v1.8.3    v1.9.0
-Scheduler            v1.8.3    v1.9.0
-Kube Proxy           v1.8.3    v1.9.0
-Kube DNS             1.14.5    1.14.13
-Etcd                 3.0.17    3.1.12
+COMPONENT                 CURRENT   TARGET
+kube-apiserver            v1.8.3    v1.9.0
+kube-controller-manager   v1.8.3    v1.9.0
+kube-scheduler            v1.8.3    v1.9.0
+kube-proxy                v1.8.3    v1.9.0
+kube-dns                  1.14.5    1.14.13
+etcd                      3.0.17    3.1.12
 
 You can now apply the upgrade by executing the following command:
 
@@ -288,18 +282,18 @@ _____________________________________________________________________
 				},
 			},
 			expectedBytes: []byte(`Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT      AVAILABLE
-Kubelet     1 x v1.8.5   v1.9.0-beta.1
+COMPONENT   CURRENT      TARGET
+kubelet     1 x v1.8.5   v1.9.0-beta.1
 
 Upgrade to the latest experimental version:
 
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.8.5    v1.9.0-beta.1
-Controller Manager   v1.8.5    v1.9.0-beta.1
-Scheduler            v1.8.5    v1.9.0-beta.1
-Kube Proxy           v1.8.5    v1.9.0-beta.1
-Kube DNS             1.14.5    1.14.13
-Etcd                 3.0.17    3.1.12
+COMPONENT                 CURRENT   TARGET
+kube-apiserver            v1.8.5    v1.9.0-beta.1
+kube-controller-manager   v1.8.5    v1.9.0-beta.1
+kube-scheduler            v1.8.5    v1.9.0-beta.1
+kube-proxy                v1.8.5    v1.9.0-beta.1
+kube-dns                  1.14.5    1.14.13
+etcd                      3.0.17    3.1.12
 
 You can now apply the upgrade by executing the following command:
 
@@ -336,18 +330,18 @@ _____________________________________________________________________
 				},
 			},
 			expectedBytes: []byte(`Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT      AVAILABLE
-Kubelet     1 x v1.8.5   v1.9.0-rc.1
+COMPONENT   CURRENT      TARGET
+kubelet     1 x v1.8.5   v1.9.0-rc.1
 
 Upgrade to the latest release candidate version:
 
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.8.5    v1.9.0-rc.1
-Controller Manager   v1.8.5    v1.9.0-rc.1
-Scheduler            v1.8.5    v1.9.0-rc.1
-Kube Proxy           v1.8.5    v1.9.0-rc.1
-Kube DNS             1.14.5    1.14.13
-Etcd                 3.0.17    3.1.12
+COMPONENT                 CURRENT   TARGET
+kube-apiserver            v1.8.5    v1.9.0-rc.1
+kube-controller-manager   v1.8.5    v1.9.0-rc.1
+kube-scheduler            v1.8.5    v1.9.0-rc.1
+kube-proxy                v1.8.5    v1.9.0-rc.1
+kube-dns                  1.14.5    1.14.13
+etcd                      3.0.17    3.1.12
 
 You can now apply the upgrade by executing the following command:
 
@@ -385,19 +379,19 @@ _____________________________________________________________________
 				},
 			},
 			expectedBytes: []byte(`Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT      AVAILABLE
-Kubelet     1 x v1.9.2   v1.9.3
+COMPONENT   CURRENT      TARGET
+kubelet     1 x v1.9.2   v1.9.3
             2 x v1.9.3   v1.9.3
 
 Upgrade to the latest version in the v1.9 series:
 
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.9.2    v1.9.3
-Controller Manager   v1.9.2    v1.9.3
-Scheduler            v1.9.2    v1.9.3
-Kube Proxy           v1.9.2    v1.9.3
-Kube DNS             1.14.5    1.14.8
-Etcd                 3.0.17    3.1.12
+COMPONENT                 CURRENT   TARGET
+kube-apiserver            v1.9.2    v1.9.3
+kube-controller-manager   v1.9.2    v1.9.3
+kube-scheduler            v1.9.2    v1.9.3
+kube-proxy                v1.9.2    v1.9.3
+kube-dns                  1.14.5    1.14.8
+etcd                      3.0.17    3.1.12
 
 You can now apply the upgrade by executing the following command:
 
@@ -435,22 +429,18 @@ _____________________________________________________________________
 				},
 			},
 			externalEtcd: true,
-			expectedBytes: []byte(`External components that should be upgraded manually before you upgrade the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT   AVAILABLE
-Etcd        3.0.17    3.1.12
-
-Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT      AVAILABLE
-Kubelet     1 x v1.9.2   v1.9.3
+			expectedBytes: []byte(`Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
+COMPONENT   CURRENT      TARGET
+kubelet     1 x v1.9.2   v1.9.3
 
 Upgrade to the latest version in the v1.9 series:
 
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.9.2    v1.9.3
-Controller Manager   v1.9.2    v1.9.3
-Scheduler            v1.9.2    v1.9.3
-Kube Proxy           v1.9.2    v1.9.3
-Kube DNS             1.14.5    1.14.8
+COMPONENT                 CURRENT   TARGET
+kube-apiserver            v1.9.2    v1.9.3
+kube-controller-manager   v1.9.2    v1.9.3
+kube-scheduler            v1.9.2    v1.9.3
+kube-proxy                v1.9.2    v1.9.3
+kube-dns                  1.14.5    1.14.8
 
 You can now apply the upgrade by executing the following command:
 
@@ -487,19 +477,19 @@ _____________________________________________________________________
 				},
 			},
 			expectedBytes: []byte(`Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT       AVAILABLE
-Kubelet     1 x v1.10.2   v1.11.0
+COMPONENT   CURRENT       TARGET
+kubelet     1 x v1.10.2   v1.11.0
 
 Upgrade to the latest kubedns to coredns:
 
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.10.2   v1.11.0
-Controller Manager   v1.10.2   v1.11.0
-Scheduler            v1.10.2   v1.11.0
-Kube Proxy           v1.10.2   v1.11.0
-CoreDNS                        1.0.6
-Kube DNS             1.14.7    
-Etcd                 3.1.11    3.2.18
+COMPONENT                 CURRENT   TARGET
+kube-apiserver            v1.10.2   v1.11.0
+kube-controller-manager   v1.10.2   v1.11.0
+kube-scheduler            v1.10.2   v1.11.0
+kube-proxy                v1.10.2   v1.11.0
+CoreDNS                             1.0.6
+kube-dns                  1.14.7    
+etcd                      3.1.11    3.2.18
 
 You can now apply the upgrade by executing the following command:
 
@@ -534,18 +524,18 @@ _____________________________________________________________________
 				},
 			},
 			expectedBytes: []byte(`Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT       AVAILABLE
-Kubelet     1 x v1.10.2   v1.11.0
+COMPONENT   CURRENT       TARGET
+kubelet     1 x v1.10.2   v1.11.0
 
 Upgrade to the latest coredns:
 
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.10.2   v1.11.0
-Controller Manager   v1.10.2   v1.11.0
-Scheduler            v1.10.2   v1.11.0
-Kube Proxy           v1.10.2   v1.11.0
-CoreDNS              1.0.5     1.0.6
-Etcd                 3.1.11    3.2.18
+COMPONENT                 CURRENT   TARGET
+kube-apiserver            v1.10.2   v1.11.0
+kube-controller-manager   v1.10.2   v1.11.0
+kube-scheduler            v1.10.2   v1.11.0
+kube-proxy                v1.10.2   v1.11.0
+CoreDNS                   1.0.5     1.0.6
+etcd                      3.1.11    3.2.18
 
 You can now apply the upgrade by executing the following command:
 
@@ -580,19 +570,19 @@ _____________________________________________________________________
 				},
 			},
 			expectedBytes: []byte(`Components that must be upgraded manually after you have upgraded the control plane with 'kubeadm upgrade apply':
-COMPONENT   CURRENT       AVAILABLE
-Kubelet     1 x v1.10.2   v1.11.0
+COMPONENT   CURRENT       TARGET
+kubelet     1 x v1.10.2   v1.11.0
 
 Upgrade to the latest coredns to kubedns:
 
-COMPONENT            CURRENT   AVAILABLE
-API Server           v1.10.2   v1.11.0
-Controller Manager   v1.10.2   v1.11.0
-Scheduler            v1.10.2   v1.11.0
-Kube Proxy           v1.10.2   v1.11.0
-CoreDNS              1.0.6     
-Kube DNS                       1.14.9
-Etcd                 3.1.11    3.2.18
+COMPONENT                 CURRENT   TARGET
+kube-apiserver            v1.10.2   v1.11.0
+kube-controller-manager   v1.10.2   v1.11.0
+kube-scheduler            v1.10.2   v1.11.0
+kube-proxy                v1.10.2   v1.11.0
+CoreDNS                   1.0.6     
+kube-dns                            1.14.9
+etcd                      3.1.11    3.2.18
 
 You can now apply the upgrade by executing the following command:
 
@@ -606,11 +596,18 @@ _____________________________________________________________________
 	for _, rt := range tests {
 		t.Run(rt.name, func(t *testing.T) {
 			rt.buf = bytes.NewBufferString("")
-			printAvailableUpgrades(rt.upgrades, rt.buf, rt.externalEtcd)
+			// Generate and print upgrade plans
+			for _, up := range rt.upgrades {
+				plan, unstableVersionFlag, err := genUpgradePlan(&up, rt.externalEtcd)
+				if err != nil {
+					t.Errorf("failed genUpgradePlan, err: %+v", err)
+				}
+				printUpgradePlan(&up, plan, unstableVersionFlag, rt.externalEtcd, rt.buf)
+			}
 			actualBytes := rt.buf.Bytes()
 			if !bytes.Equal(actualBytes, rt.expectedBytes) {
 				t.Errorf(
-					"failed PrintAvailableUpgrades:\n\texpected: %q\n\t  actual: %q",
+					"failed PrintAvailableUpgrades:\n\texpected: %q\n\n\tactual  : %q",
 					string(rt.expectedBytes),
 					string(actualBytes),
 				)

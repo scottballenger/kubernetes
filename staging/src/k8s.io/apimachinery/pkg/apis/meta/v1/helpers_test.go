@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/google/gofuzz"
-
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/diff"
@@ -169,7 +168,7 @@ func TestResetObjectMetaForStatus(t *testing.T) {
 	existingMeta := &ObjectMeta{}
 
 	// fuzz the existingMeta to set every field, no nils
-	f := fuzz.New().NilChance(0).NumElements(1, 1)
+	f := fuzz.New().NilChance(0).NumElements(1, 1).MaxDepth(10)
 	f.Fuzz(existingMeta)
 	ResetObjectMetaForStatus(meta, existingMeta)
 
@@ -190,9 +189,44 @@ func TestResetObjectMetaForStatus(t *testing.T) {
 	existingMeta.SetCreationTimestamp(Time{})
 	existingMeta.SetDeletionTimestamp(nil)
 	existingMeta.SetDeletionGracePeriodSeconds(nil)
-	existingMeta.SetInitializers(nil)
+	existingMeta.SetManagedFields(nil)
 
 	if !reflect.DeepEqual(meta, existingMeta) {
 		t.Error(diff.ObjectDiff(meta, existingMeta))
+	}
+}
+
+func TestSetMetaDataLabel(t *testing.T) {
+	tests := []struct {
+		obj   *ObjectMeta
+		label string
+		value string
+		want  map[string]string
+	}{
+		{
+			obj:   &ObjectMeta{},
+			label: "foo",
+			value: "bar",
+			want:  map[string]string{"foo": "bar"},
+		},
+		{
+			obj:   &ObjectMeta{Labels: map[string]string{"foo": "bar"}},
+			label: "foo",
+			value: "baz",
+			want:  map[string]string{"foo": "baz"},
+		},
+		{
+			obj:   &ObjectMeta{Labels: map[string]string{"foo": "bar"}},
+			label: "version",
+			value: "1.0.0",
+			want:  map[string]string{"foo": "bar", "version": "1.0.0"},
+		},
+	}
+
+	for _, tc := range tests {
+		SetMetaDataLabel(tc.obj, tc.label, tc.value)
+		if !reflect.DeepEqual(tc.obj.Labels, tc.want) {
+			t.Errorf("got %v, want %v", tc.obj.Labels, tc.want)
+		}
 	}
 }

@@ -28,16 +28,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"k8s.io/apimachinery/pkg/util/clock"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/admission"
+	quota "k8s.io/apiserver/pkg/quota/v1"
+	"k8s.io/apiserver/pkg/quota/v1/generic"
 	api "k8s.io/kubernetes/pkg/apis/core"
 	k8s_api_v1 "k8s.io/kubernetes/pkg/apis/core/v1"
 	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
 	"k8s.io/kubernetes/pkg/apis/core/v1/helper/qos"
-	"k8s.io/kubernetes/pkg/kubeapiserver/admission/util"
-	quota "k8s.io/kubernetes/pkg/quota/v1"
-	"k8s.io/kubernetes/pkg/quota/v1/generic"
 )
 
 // the name used for object count quota
@@ -59,7 +57,7 @@ var podResources = []corev1.ResourceName{
 }
 
 // podResourcePrefixes are the set of prefixes for resources (Hugepages, and other
-// potential extended reources with specific prefix) managed by quota associated with pods.
+// potential extended resources with specific prefix) managed by quota associated with pods.
 var podResourcePrefixes = []string{
 	corev1.ResourceHugePagesPrefix,
 	corev1.ResourceRequestsHugePagesPrefix,
@@ -150,14 +148,7 @@ func (p *podEvaluator) Handles(a admission.Attributes) bool {
 	if op == admission.Create {
 		return true
 	}
-	initializationCompletion, err := util.IsInitializationCompletion(a)
-	if err != nil {
-		// fail closed, will try to give an evaluation.
-		utilruntime.HandleError(err)
-		return true
-	}
-	// only uninitialized pods might be updated.
-	return initializationCompletion
+	return false
 }
 
 // Matches returns true if the evaluator matches the specified quota with the provided input item

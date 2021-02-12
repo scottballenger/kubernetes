@@ -21,9 +21,9 @@ import (
 
 	api "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog"
-	"k8s.io/kubernetes/pkg/util/keymutex"
+	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/volume"
+	"k8s.io/utils/keymutex"
 )
 
 const (
@@ -72,7 +72,7 @@ func (p *sioPlugin) CanSupport(spec *volume.Spec) bool {
 		(spec.Volume != nil && spec.Volume.ScaleIO != nil)
 }
 
-func (p *sioPlugin) RequiresRemount() bool {
+func (p *sioPlugin) RequiresRemount(spec *volume.Spec) bool {
 	return false
 }
 

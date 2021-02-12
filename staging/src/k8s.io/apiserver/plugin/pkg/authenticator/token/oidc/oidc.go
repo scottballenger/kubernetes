@@ -43,7 +43,7 @@ import (
 	"time"
 
 	oidc "github.com/coreos/go-oidc"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -77,12 +77,6 @@ type Options struct {
 	// specialized providers to issue tokens to a client for a different client.
 	// See: https://openid.net/specs/openid-connect-core-1_0.html#IDToken
 	ClientID string
-
-	// APIAudiences are the audiences that the API server identitifes as. The
-	// (API audiences unioned with the ClientIDs) should have a non-empty
-	// intersection with the request's target audience. This preserves the
-	// behavior of the OIDC authenticator pre-introduction of API audiences.
-	APIAudiences authenticator.Audiences
 
 	// Path to a PEM encoded root certificate of the provider.
 	CAFile string
@@ -194,8 +188,6 @@ type Authenticator struct {
 	groupsClaim    string
 	groupsPrefix   string
 	requiredClaims map[string]string
-	clientIDs      authenticator.Audiences
-	apiAudiences   authenticator.Audiences
 
 	// Contains an *oidc.IDTokenVerifier. Do not access directly use the
 	// idTokenVerifier method.
@@ -226,7 +218,7 @@ func New(opts Options) (*Authenticator, error) {
 	return newAuthenticator(opts, func(ctx context.Context, a *Authenticator, config *oidc.Config) {
 		// Asynchronously attempt to initialize the authenticator. This enables
 		// self-hosted providers, providers that run on top of Kubernetes itself.
-		go wait.PollUntil(time.Second*10, func() (done bool, err error) {
+		go wait.PollImmediateUntil(time.Second*10, func() (done bool, err error) {
 			provider, err := oidc.NewProvider(ctx, a.issuerURL)
 			if err != nil {
 				klog.Errorf("oidc authenticator: initializing plugin: %v", err)
@@ -325,8 +317,6 @@ func newAuthenticator(opts Options, initVerifier func(ctx context.Context, a *Au
 		groupsClaim:    opts.GroupsClaim,
 		groupsPrefix:   opts.GroupsPrefix,
 		requiredClaims: opts.RequiredClaims,
-		clientIDs:      authenticator.Audiences{opts.ClientID},
-		apiAudiences:   opts.APIAudiences,
 		cancel:         cancel,
 		resolver:       resolver,
 	}
@@ -542,11 +532,6 @@ func (r *claimResolver) resolve(endpoint endpoint, allClaims claims) error {
 }
 
 func (a *Authenticator) AuthenticateToken(ctx context.Context, token string) (*authenticator.Response, bool, error) {
-	if reqAuds, ok := authenticator.AudiencesFrom(ctx); ok {
-		if len(reqAuds.Intersect(a.clientIDs)) == 0 && len(reqAuds.Intersect(a.apiAudiences)) == 0 {
-			return nil, false, nil
-		}
-	}
 	if !hasCorrectIssuer(a.issuerURL, token) {
 		return nil, false, nil
 	}
